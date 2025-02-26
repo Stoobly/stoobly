@@ -1,4 +1,5 @@
 import click
+import errno
 import os
 import pdb
 import sys
@@ -14,6 +15,7 @@ from stoobly_agent.app.cli.scaffold.constants import (
 )
 from stoobly_agent.app.cli.scaffold.docker.service.set_gateway_ports import set_gateway_ports
 from stoobly_agent.app.cli.scaffold.docker.workflow.decorators_factory import get_workflow_decorators
+from stoobly_agent.app.cli.scaffold.hosts_file_manager import HostsFileManager
 from stoobly_agent.app.cli.scaffold.service import Service
 from stoobly_agent.app.cli.scaffold.service_config import ServiceConfig
 from stoobly_agent.app.cli.scaffold.service_create_command import ServiceCreateCommand
@@ -461,9 +463,66 @@ def validate(**kwargs):
     print(f"\nFatal Scaffold Validation Exception: {sve}", file=sys.stderr)
     sys.exit(1)
 
+@click.group(
+  epilog="Run 'stoobly-agent scaffold hostname COMMAND --help' for more information on a command.",
+  help="Manage scaffold service hostnames"
+)
+@click.pass_context
+def hostname(ctx):
+    pass
+
+@hostname.command(
+  help="Update the system hosts file for all scaffold service hostnames"
+)
+@click.option('--app-dir-path', default=os.getcwd(), help='Path to validate the app scaffold.')
+def install(**kwargs):
+  app = App(kwargs['app_dir_path'], DOCKER_NAMESPACE)
+  services = app.services
+  services = list(filter(lambda service: service not in CORE_SERVICES, services))
+
+  hostnames = []
+  for service_name in services:
+    service = Service(service_name, app)
+    service_config = ServiceConfig(service.dir_path)
+    hostnames.append(service_config.hostname)
+
+  hosts_file_manager = HostsFileManager()
+
+  try:
+    hosts_file_manager.install_hostnames(hostnames)
+  except PermissionError:
+    print("Permission denied. Please run this command with sudo.")
+
+@hostname.command(
+  help="Delete from the system hosts file all scaffold service hostnames"
+)
+@click.option('--app-dir-path', default=os.getcwd(), help='Path to validate the app scaffold.')
+def uninstall(**kwargs):
+  app = App(kwargs['app_dir_path'], DOCKER_NAMESPACE)
+  services = app.services
+  services = list(filter(lambda service: service not in CORE_SERVICES, services))
+
+  hostnames = []
+  for service_name in services:
+    service = Service(service_name, app)
+    service_config = ServiceConfig(service.dir_path)
+    hostnames.append(service_config.hostname)
+
+  hosts_file_manager = HostsFileManager()
+
+  try:
+    hosts_file_manager.uninstall_hostnames(hostnames)
+  except OSError as e:
+    if e.errno == errno.EACCES or e.errno == errno.EPERM:
+      print("Permission denied. Please run this command with sudo.")
+    else:
+      print(f"An unexpected error occurred: {e}")
+
+
 scaffold.add_command(app)
 scaffold.add_command(service)
 scaffold.add_command(workflow)
+scaffold.add_command(hostname)
 
 def __get_services(services: List[str], **kwargs):
   # Log services that don't exist

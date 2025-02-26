@@ -1,0 +1,5 @@
+#!/bin/bash
+
+extra_options=$EXEC_OPTIONS
+
+stoobly-agent scaffold hostname install $extra_options

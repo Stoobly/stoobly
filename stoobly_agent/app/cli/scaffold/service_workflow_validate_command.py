@@ -22,7 +22,7 @@ from stoobly_agent.app.cli.scaffold.constants import (
   WORKFLOW_RECORD_TYPE,
   WORKFLOW_TEST_TYPE,
 )
-from stoobly_agent.app.cli.scaffold.hosts_file_reader import HostsFileReader
+from stoobly_agent.app.cli.scaffold.hosts_file_manager import HostsFileManager
 from stoobly_agent.app.cli.scaffold.service_command import ServiceCommand
 from stoobly_agent.app.cli.scaffold.service_docker_compose import ServiceDockerCompose
 from stoobly_agent.app.cli.scaffold.validate_command import ValidateCommand
@@ -91,8 +91,8 @@ class ServiceWorkflowValidateCommand(ServiceCommand, ValidateCommand):
   def hostname_exists(self, hostname: str) -> bool:
     print(f"Validating hostname exists in hosts file for hostname: {hostname}")
 
-    hosts_file_reader = HostsFileReader()
-    host_mapping = hosts_file_reader.find_host(hostname)
+    hosts_file_manager = HostsFileManager()
+    host_mapping = hosts_file_manager.find_host(hostname)
     if host_mapping:
       print(f"Correct hosts mapping found for {hostname}")
       return True
