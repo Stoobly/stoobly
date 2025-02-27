@@ -1,8 +1,8 @@
-import cgi
 import json
 import pdb
 import urllib.parse
 
+from email.message import Message
 from mitmproxy.coretypes.multidict import MultiDict
 from mitmproxy.net import encoding
 from typing import Dict, Union
@@ -108,7 +108,7 @@ def serialize_www_form_urlencoded(o):
 def normalize_header(header):
     if isinstance(header, bytes):
         header = header.decode('utf-8')
-    return cgi.parse_header(header)[0].lower()
+    return __parse_separated_header(header).lower()
 
 def is_traversable(content):
     return isinstance(content, list) or isinstance(content, dict) or isinstance(content, MultiDict)
@@ -116,3 +116,11 @@ def is_traversable(content):
 def is_json(content_type):
    _content_type = content_type.lower()
    return _content_type == JSON or _content_type.startswith('application/x-amz-json') 
+
+
+def __parse_separated_header(header: str):
+    # Adapted from https://peps.python.org/pep-0594/#cgi
+    message = Message()
+    message['content-type'] = header 
+    return message.get_content_type()
+
